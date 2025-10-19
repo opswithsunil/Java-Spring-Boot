@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: autovyn-svc
+  namespace: dev
+  labels:
+    app: autovyn-app
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: autovyn-app
