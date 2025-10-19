@@ -1,0 +1,67 @@
+name: Terraform CI/CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Select environment to deploy (dev or prod)'
+        required: true
+        default: 'dev'
+
+env:
+  TF_DIR: infra
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  terraform:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.13.0
+
+    - name: Authenticate to GCP
+      id: auth
+      uses: google-github-actions/auth@v1
+      with:
+        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+    - name: Configure GCP project
+      run: gcloud config set project ${{ secrets.PROJECT_ID }}
+
+    - name: Set Terraform workspace
+      working-directory: ${{ env.TF_DIR }}
+      run: |
+        terraform init
+        if terraform workspace list | grep -q ${{ github.event.inputs.environment }}; then
+          terraform workspace select ${{ github.event.inputs.environment }}
+        else
+          terraform workspace new ${{ github.event.inputs.environment }}
+        fi
+
+    - name: Terraform Plan
+      working-directory: ${{ env.TF_DIR }}
+      run: |
+        terraform plan \
+          -var="project_id=${{ secrets.PROJECT_ID }}" \
+          -var="region=${{ secrets.REGION }}" \
+          -var-file="terraform.tfvars"
+
+    - name: Terraform Apply
+      if: github.event_name == 'workflow_dispatch'
+      working-directory: ${{ env.TF_DIR }}
+      run: |
+        terraform apply -auto-approve \
+          -var="project_id=${{ secrets.PROJECT_ID }}" \
+          -var="region=${{ secrets.REGION }}" \
+          -var-file="environment/${{ github.event.inputs.environment }}.tfvars"

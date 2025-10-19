@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autovyn-app
+  namespace: dev
+  labels:
+    app: autovyn-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: autovyn-app
+  template:
+    metadata:
+      labels:
+        app: autovyn-app
+    spec:
+      serviceAccountName: autovyn-dev-gke-sa
+      containers:
+      - name: autovyn-app
+        image: asia-aouth1-docker.pkg.dev/easydevops-project/autovyn-docker/java-app:latest
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        envFrom:
+        - configMapRef:
+            name: app-config
+        - secretRef:
+            name: app-secrets

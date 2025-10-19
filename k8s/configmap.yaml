@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: dev
+data:
+  APP_ENV: "dev"
+  CACHE_HOST: "autovyn-dev-redis"
+  PUBSUB_TOPIC: "autovyn-dev-events"

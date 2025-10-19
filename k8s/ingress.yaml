@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: autovyn-ingress
+  namespace: dev
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    kubernetes.io/ingress.allow-http: "false"
+    networking.gke.io/managed-certificates: "autovyn-cert"
+    networking.gke.io/v1beta1.FrontendConfig: "autovyn-frontend-config"
+spec:
+  rules:
+    - host: autovyn.dev.opswithsunil.click
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: autovyn-svc
+              port:
+                number: 8080
+  tls:
+    - secretName: autovyn-cert-secret
