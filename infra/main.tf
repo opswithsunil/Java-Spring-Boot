@@ -75,6 +75,46 @@ module "gke" {
   env         = var.env
 }
 
+resource "google_compute_network_endpoint_group" "app_neg" {
+  name         = "${var.name_prefix}-neg"
+  network      = module.vpc.network_self_link
+  subnetwork   = element(module.vpc.subnet_self_links, 0)
+  default_port = var.default_port
+  zone         = "${var.region}-a"
+}
+
+
+# Load Balancer 
+module "load_balancer" {
+  depends_on            = [module.gke]
+  source                = "./modules/load-balancer"
+  count                 = var.create_load_balancer ? 1 : 0
+  vpc_id                = module.vpc.network_self_link
+  subnetwork            = length(module.vpc.subnet_self_links) > 0 ? module.vpc.subnet_self_links[0] : null
+  lb_name               = var.lb_name
+  gcp_zone              = var.gcp_zone
+  domain_name           = var.domain_name
+  neg_name              = var.neg_name
+  network_endpoint_type = "GCE_VM_IP_PORT"
+  default_port          = var.default_port
+  lb_enable_logging     = var.lb_enable_logging
+  dns-zone-name         = var.dns-zone-name
+  blocked_ip_ranges     = var.blocked_ip_ranges
+  enable_cdn            = var.enable_cdn
+  health_check_path     = var.health_check_path
+  cluster_name          = module.gke.cluster_name
+  gcp_project           = var.project_id
+  location              = var.region
+  negs = [
+    {
+      name      = "gke-neg"
+      self_link = google_compute_network_endpoint_group.app_neg.self_link
+    }
+  ]
+  create_gke_ingress    = var.create_gke_ingress
+}
+
+
 # Cloud Run service for worker
 module "cloudrun_worker" {
   source          = "./modules/cloudrun_service"
