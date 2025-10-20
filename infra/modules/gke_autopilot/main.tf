@@ -6,14 +6,14 @@ variable "subnetwork" { type = string }
 variable "env" { type = string }
 
 resource "google_container_cluster" "autopilot" {
-  name     = "${var.name_prefix}-${var.env}-gke"
-  project  = var.project_id
-  location = var.region
-  enable_autopilot = true
+  name                = "${var.name_prefix}-${var.env}-gke"
+  project             = var.project_id
+  location            = var.region
+  enable_autopilot    = true
   deletion_protection = false
-  
-  network          = var.network
-  subnetwork       = var.subnetwork
+
+  network    = var.network
+  subnetwork = var.subnetwork
 
   release_channel {
     channel = "STABLE"
